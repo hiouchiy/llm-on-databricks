@@ -1,16 +1,17 @@
 # 大規模言語モデル（LLM）講義 - Databricks ハンズオン
 
-大学院生向けの90分講義で使用する、Databricks環境での大規模言語モデル（LLM）の実践的なハンズオン教材です。Foundation Model APIからオープンソースモデルのファインチューニングまで、LLMの基礎から応用まで体系的に学習できます。
+大学などの講義（90分）で使用する、Databricks環境での大規模言語モデル（LLM）の実践的なハンズオン教材です。Foundation Model APIからオープンソースモデルのファインチューニング、MLflowによる評価・管理まで、LLMの基礎から本番運用まで体系的に学習できます。
 
 ## 📚 概要
 
-本教材は、以下のトピックをカバーする5つのExerciseで構成されています：
+本教材は、以下のトピックをカバーする6つのExerciseで構成されています：
 
 1. **Exercise 1**: Chat Completion APIの基本
 2. **Exercise 2**: Structured Outputsによるデータ抽出
 3. **Exercise 3**: Function Callingの基礎
 4. **Exercise 4**: HuggingFaceモデルのローカル実行
 5. **Exercise 5**: LoRAファインチューニング
+6. **Exercise 6**: MLflowによるモデル評価と実験管理 ⭐ **NEW**
 
 ## 🎯 学習目標
 
@@ -18,6 +19,9 @@
 - Structured OutputsとFunction Callingの実装
 - オープンソースモデル（Gemma 3 270M）の活用
 - LoRAを使ったパラメータ効率的なファインチューニング
+- **MLflowによる実験トラッキングとモデル管理** ⭐ **NEW**
+- **LLM評価指標とベストプラクティス** ⭐ **NEW**
+- **Model Registryを使った本番デプロイ** ⭐ **NEW**
 - 実務で使えるLLMアプリケーション開発スキルの獲得
 
 ## 📋 前提条件
@@ -28,25 +32,18 @@
 - 機械学習の基本的な理解
 
 ### 推奨
-- GPU対応クラスタ（Exercise 4, 5で使用）
-- Databricks Runtime 14.3 ML以降
+- GPU対応クラスタ（Exercise 5, 6で使用）
+- MLflowの基礎知識（Exercise 6）
 
 ## 🚀 セットアップ
 
 ### 1. Databricks環境の準備
 
-**Option A: Databricks Free Edition（推奨）**
+**Databricks Free Edition**
 ```
 1. https://www.databricks.com/try-databricks にアクセス
 2. アカウントを作成
 3. Notebookを新規作成
-```
-
-**Option B: Databricks Community Edition**
-```
-1. https://community.cloud.databricks.com/ にアクセス
-2. 既存アカウントでログイン
-3. クラスタを起動
 ```
 
 ### 2. 必要なライブラリのインストール
@@ -59,9 +56,12 @@
 
 # Exercise 4-5
 %pip install --upgrade transformers datasets accelerate peft trl bitsandbytes sentencepiece
+
+# Exercise 6
+%pip install --upgrade transformers datasets evaluate rouge-score bert-score sacrebleu nltk peft torch mlflow
 ```
 
-### 3. HuggingFace Tokenの設定（Exercise 4-5のみ）
+### 3. HuggingFace Tokenの設定（Exercise 4-6）
 
 Gemma 3モデルを使用するには、HuggingFaceのトークンが必要です：
 
@@ -277,40 +277,139 @@ trainer.train()
 - LoRA（r=16）: 約0.5M（0.2%）
 - **削減率**: 99.8%
 
+### Exercise 6: MLflowによるモデル評価と実験管理（20分）⭐ **NEW**
+
+**目的**: MLflowを使った実験トラッキング、モデル評価、本番デプロイを学ぶ
+
+**内容**:
+- MLflowによる実験の自動トラッキング
+- 評価指標（BLEU、ROUGE、BERTScore）の記録
+- MLflow Datasetsによるデータ管理
+- カスタム評価指標の定義
+- LLM-as-a-Judgeの実装とトラッキング
+- Model Registryへの登録とステージング
+- Model Servingへのデプロイ（デモ）
+- 総合評価レポートの自動生成
+
+**Databricks特有の機能**:
+- MLflow UIでの実験比較
+- Unity Catalogとの統合
+- Lakehouse Monitoringへの接続
+
+**主な学習ポイント**:
+```
+import mlflow
+import mlflow.transformers
+
+# MLflow実験の設定
+mlflow.set_experiment("/Users/your-name/llm-evaluation")
+
+# 評価実行とトラッキング
+with mlflow.start_run(run_name="finetuned-model-eval") as run:
+    # データセットをログ
+    mlflow.log_input(dataset_source, context="evaluation")
+    
+    # パラメータをログ
+    mlflow.log_param("model_name", model_id)
+    mlflow.log_param("num_parameters", model.num_parameters())
+    
+    # メトリクスをログ
+    mlflow.log_metric("bleu_score", bleu_result['score'])
+    mlflow.log_metric("rouge1_score", rouge_result['rouge1'])
+    mlflow.log_metric("bertscore_f1", f1_score)
+    
+    # モデルを登録
+    mlflow.transformers.log_model(
+        transformers_model={"model": model, "tokenizer": tokenizer},
+        artifact_path="model",
+        registered_model_name="gemma-3-270m-finetuned"
+    )
+```
+
+**評価指標**:
+1. **自動評価**
+   - BLEU: n-gramベースの精度測定
+   - ROUGE: 再現率ベースの要約評価
+   - BERTScore: 意味的類似度の測定
+
+2. **カスタム評価**
+   - スタイル一貫性（ござる口調使用率）
+   - 応答長の分析
+   - 推論速度の測定
+
+3. **LLM-as-a-Judge**
+   - 強力なLLMによる品質評価
+   - 人間の判断により近い評価
+   - 説明可能性の高い評価
+
+**Model Registryとデプロイ**:
+```
+from mlflow.tracking import MlflowClient
+
+client = MlflowClient()
+
+# モデルをStagingに昇格
+client.transition_model_version_stage(
+    name="gemma-3-270m-finetuned",
+    version="1",
+    stage="Staging"
+)
+
+# 性能基準を満たせばProductionに昇格
+if meets_production_criteria:
+    client.transition_model_version_stage(
+        name="gemma-3-270m-finetuned",
+        version="1",
+        stage="Production"
+    )
+```
+
 ## 💡 推奨学習順序
 
+### 講義内（90分）
 1. **Exercise 1 → 2 → 3**: Foundation Model APIの基礎から応用（30分）
 2. **Exercise 4**: オープンソースモデルの理解（15分）
-3. **Exercise 5**: ファインチューニング（環境があれば実施）
+3. **Exercise 5**: ファインチューニング実行（演習として開始）
+
+### 講義後の発展学習
+4. **Exercise 5**: ファインチューニング完了の確認
+5. **Exercise 6**: MLflowによる評価と本番デプロイ（重要）⭐
 
 ## 🏗️ アーキテクチャ概要
 
 ```
-┌─────────────────────────────────────────────────────┐
-│         Databricks Workspace                        │
-│                                                     │
-│  ┌──────────────────┐   ┌─────────────────────┐  │
-│  │ Foundation Model │   │ HuggingFace Models  │  │
-│  │ API              │   │ (Gemma 3 270M)      │  │
-│  │ - Llama 3.3 70B  │   │ - Direct inference  │  │
-│  │ - Gemini         │   │ - LoRA fine-tuning  │  │
-│  │ - Qwen           │   └─────────────────────┘  │
-│  └──────────────────┘                              │
-│         ↓                        ↓                 │
-│  ┌──────────────────────────────────────────────┐ │
-│  │ Applications                                  │ │
-│  │ - Structured Output (Review Analysis)        │ │
-│  │ - Function Calling (Customer Support)        │ │
-│  │ - Custom Domain (Fine-tuned models)          │ │
-│  └──────────────────────────────────────────────┘ │
-│                                                     │
-│  ┌──────────────────────────────────────────────┐ │
-│  │ Data Processing                               │ │
-│  │ - ai_query() for batch inference             │ │
-│  │ - Pandas UDF for complex logic               │ │
-│  │ - Structured Streaming for real-time         │ │
-│  └──────────────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│                   Databricks Workspace                        │
+│                                                               │
+│  ┌──────────────────┐   ┌─────────────────────┐             │
+│  │ Foundation Model │   │ HuggingFace Models  │             │
+│  │ API              │   │ (Gemma 3 270M)      │             │
+│  │ - Llama 3.3 70B  │   │ - Direct inference  │             │
+│  │ - Gemini         │   │ - LoRA fine-tuning  │             │
+│  │ - Qwen           │   └─────────────────────┘             │
+│  └──────────────────┘                                         │
+│         ↓                        ↓                            │
+│  ┌──────────────────────────────────────────────┐            │
+│  │ Applications                                  │            │
+│  │ - Structured Output (Review Analysis)        │            │
+│  │ - Function Calling (Customer Support)        │            │
+│  │ - Custom Domain (Fine-tuned models)          │            │
+│  └──────────────────────────────────────────────┘            │
+│                                                               │
+│  ┌──────────────────────────────────────────────┐            │
+│  │ MLflow (Experiment Management) ⭐ NEW         │            │
+│  │ - Experiment Tracking                         │            │
+│  │ - Model Registry                              │            │
+│  │ - Model Serving                               │            │
+│  └──────────────────────────────────────────────┘            │
+│                                                               │
+│  ┌──────────────────────────────────────────────┐            │
+│  │ Data Processing                               │            │
+│  │ - ai_query() for batch inference             │            │
+│  │ - Pandas UDF for complex logic               │            │
+│  │ - Structured Streaming for real-time         │            │
+│  └──────────────────────────────────────────────┘            │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ## 📊 本番事例（Exercise 2で紹介）
@@ -381,12 +480,26 @@ gradient_accumulation_steps=8  # 4 → 8
 gradient_checkpointing=True
 ```
 
+### Exercise 6: MLflow実験が見つからない ⭐ **NEW**
+
+**原因**: 実験名のパスが正しくない
+
+**解決策**:
+```
+# ユーザー名を動的に取得
+username = dbutils.notebook.entry_point.getDbutils().notebook().getContext().userName().get()
+experiment_name = f"/Users/{username}/llm-evaluation"
+mlflow.set_experiment(experiment_name)
+```
+
 ## 📚 参考資料
 
 ### 公式ドキュメント
 - [Databricks Foundation Model APIs](https://docs.databricks.com/machine-learning/foundation-model-apis/)
 - [Databricks Structured Outputs](https://docs.databricks.com/machine-learning/model-serving/structured-outputs)
 - [Databricks Function Calling](https://docs.databricks.com/machine-learning/model-serving/function-calling)
+- [MLflow Documentation](https://mlflow.org/docs/latest/index.html) ⭐ **NEW**
+- [MLflow Model Registry](https://mlflow.org/docs/latest/model-registry.html) ⭐ **NEW**
 - [Gemma 3 Model Card](https://huggingface.co/google/gemma-3-270m-it)
 - [Hugging Face Transformers](https://huggingface.co/docs/transformers/)
 - [PEFT Documentation](https://huggingface.co/docs/peft/)
@@ -395,6 +508,7 @@ gradient_checkpointing=True
 - [Attention is All You Need (2017)](https://arxiv.org/abs/1706.03762) - Transformerの原論文
 - [LoRA: Low-Rank Adaptation](https://arxiv.org/abs/2106.09685)
 - [Databricks: Introducing Structured Outputs](https://www.databricks.com/blog/introducing-structured-outputs-batch-and-agent-workflows)
+- [MLflow: A Platform for Managing the Machine Learning Lifecycle](https://mlflow.org/docs/latest/index.html) ⭐ **NEW**
 
 ## 🤝 コントリビューション
 
@@ -441,7 +555,10 @@ SOFTWARE.
 - Google Gemma 3チームによるモデルとドキュメント
 - HuggingFace TransformersとPEFTライブラリ
 - Databricks Dolly 15k日本語訳（kunishou氏）とgozarinne版（bbz662bbz氏）
+- MLflow開発チームとコミュニティ ⭐ **NEW**
 
 ---
 
 **Happy Learning! 🚀**
+
+**Powered by Databricks + MLflow** ⭐
