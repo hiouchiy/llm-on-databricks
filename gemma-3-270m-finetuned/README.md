@@ -1,14 +1,13 @@
 ---
-base_model: unsloth/gemma-3-270m-it-unsloth-bnb-4bit
+base_model: unsloth/gemma-3-270m-it
 library_name: peft
 pipeline_tag: text-generation
 tags:
-- base_model:adapter:unsloth/gemma-3-270m-it-unsloth-bnb-4bit
+- base_model:adapter:unsloth/gemma-3-270m-it
 - lora
 - sft
 - transformers
 - trl
-- unsloth
 ---
 
 # Model Card for Model ID
