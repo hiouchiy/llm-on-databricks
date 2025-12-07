@@ -62,18 +62,13 @@ print(f"CUDA available: {torch.cuda.is_available()}")
 
 # COMMAND ----------
 
-import os
-
-# HuggingFace Hubのアクセストークンを環境変数に設定
-os.environ["HF_TOKEN"] = "<your_huggingface_access_token>"
-
-# COMMAND ----------
-
 # DBTITLE 1,モデルとトークナイザーのロード
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 
-model_id = "google/gemma-3-270m-it"
+import os
+
+model_id = "unsloth/gemma-3-270m-it" #元ネタは"google/gemma-3-270m-it"
 
 print(f"【モデルのダウンロード中】")
 print(f"Model ID: {model_id}")

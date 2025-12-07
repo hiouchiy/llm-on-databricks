@@ -23,7 +23,7 @@
 # COMMAND ----------
 
 # DBTITLE 1,必要なライブラリのインストール
-# MAGIC %pip install --upgrade transformers datasets evaluate rouge-score bert-score sacrebleu nltk peft torch mlflow
+# MAGIC %pip install --upgrade transformers datasets evaluate rouge-score bert-score sacrebleu nltk peft torch mlflow fugashi unidic_lite torchvision unsloth
 # MAGIC
 # MAGIC dbutils.library.restartPython()
 
@@ -70,7 +70,7 @@ test_dataset = dataset['test']
 # 評価用サンプリング
 import random
 random.seed(42)
-eval_indices = random.sample(range(len(test_dataset)), min(100, len(test_dataset)))
+eval_indices = random.sample(range(len(test_dataset)), min(3, len(test_dataset)))
 eval_dataset = test_dataset.select(eval_indices)
 
 # DataFrameに変換（MLflow用）
@@ -106,7 +106,7 @@ print(f"✅ 評価データセット準備完了: {len(eval_df)}サンプル")
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 
-base_model_id = "google/gemma-3-270m-it"
+base_model_id = "unsloth/gemma-3-270m-it"
 
 def generate_response(model, tokenizer, prompt: str, max_new_tokens: int = 150) -> str:
     """モデルで応答を生成"""
@@ -208,7 +208,8 @@ def evaluate_model_with_mlflow(model, tokenizer, eval_df, model_name: str, run_n
             references,
             lang="ja",
             verbose=False,
-            model_type="cl-tohoku/bert-base-japanese-v3"
+            model_type="tohoku-nlp/bert-base-japanese-v3",
+            num_layers=12   # 東北大BERT v3 は BERT base と同じ 12層 モデルであることを明示的に指定
         )
         
         # カスタム指標: ござる口調使用率
@@ -305,13 +306,13 @@ base_results = evaluate_model_with_mlflow(
 from peft import AutoPeftModelForCausalLM
 
 # ファインチューニング済みモデルのパス
-finetuned_model_path = "/dbfs/tmp/gemma-3-270m-lora-adapters"
+finetuned_model_path = "/Workspace/Users/hiouchiy@gmail.com/llm-on-databricks/gemma-3-270m-finetuned"
 
 print("【ファインチューニング済みモデルのロード】")
 finetuned_tokenizer = AutoTokenizer.from_pretrained(finetuned_model_path)
 finetuned_model = AutoPeftModelForCausalLM.from_pretrained(
     finetuned_model_path,
-    torch_dtype=torch.bfloat16,
+    dtype=torch.bfloat16,
     device_map="auto"
 )
 print("✅ ファインチューニング済みモデルロード完了")
