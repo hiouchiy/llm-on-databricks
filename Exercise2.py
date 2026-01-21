@@ -23,7 +23,10 @@
 
 # COMMAND ----------
 
-MODEL_NAME = "databricks-llama-4-maverick"
+import random
+MODEL_NAME = random.choice(["databricks-llama-4-maverick", "databricks-gpt-oss-120b", "databricks-gpt-oss-20b", "databricks-qwen3-next-80b-a3b-instruct", "databricks-gemma-3-12b"])
+
+print(MODEL_NAME + " が選択されました。")
 
 # COMMAND ----------
 
@@ -80,8 +83,7 @@ response = client.chat.completions.create(
     messages=[
         {
             "role": "system",
-            "content": """あなたは顧客レビューから情報を抽出する専門家です。
-以下のルールに従ってください：
+            "content": """あなたは顧客レビューから情報を抽出する専門家です。以下のルールに従ってください：
 - ratingは必ず1から5の整数値で、1が最低、5が最高です
 - レビュー内容に基づいて正確に判定してください"""
         },
@@ -98,11 +100,15 @@ response = client.chat.completions.create(
             "strict": True
         }
     },
-    temperature=0.0
+    temperature=0.0,
+    reasoning_effort="low" # GPT-OSS用。デフォルトはmediumだが、lowに変更。
 )
 
 # 結果の取得とパース
-extracted_data = json.loads(response.choices[0].message.content)
+if MODEL_NAME in ["databricks-gpt-oss-20b", "databricks-gpt-oss-120b"]:
+    extracted_data = json.loads(response.choices[0].message.content[-1]["text"])
+else:
+    extracted_data = json.loads(response.choices[0].message.content)
 
 print("\n【抽出された構造化データ】")
 print(json.dumps(extracted_data, indent=2, ensure_ascii=False))
@@ -235,11 +241,17 @@ def analyze_review(review_text: str, review_id: str) -> dict:
                 "strict": True
             }
         },
-        temperature=0.0
+        temperature=0.0,
+        reasoning_effort="low" # GPT-OSS用。デフォルトはmediumだが、lowに変更。
     )
     
     # JSONパース
-    result = json.loads(response.choices[0].message.content)
+    # 結果の取得とパース
+    if MODEL_NAME in ["databricks-gpt-oss-20b", "databricks-gpt-oss-120b"]:
+        result = json.loads(response.choices[0].message.content[-1]["text"])
+    else:
+        result = json.loads(response.choices[0].message.content)
+    
     result["review_id"] = review_id  # IDを追加
     
     return result

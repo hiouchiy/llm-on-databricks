@@ -8,7 +8,7 @@
 # MAGIC - システムプロンプトとユーザープロンプトの役割を実験的に理解する
 # MAGIC
 # MAGIC ## 使用するモデル
-# MAGIC - **Meta Llama 3.3 70B Instruct**: 高性能な会話型モデル
+# MAGIC - **Meta Llama 4 maverick**: 高性能な会話型モデル
 # MAGIC - Databricks-hosted foundation modelとして提供
 
 # COMMAND ----------
@@ -24,7 +24,10 @@
 
 # COMMAND ----------
 
-MODEL_NAME = "databricks-llama-4-maverick"
+import random
+MODEL_NAME = random.choice(["databricks-llama-4-maverick", "databricks-gpt-oss-120b", "databricks-gpt-oss-20b", "databricks-qwen3-next-80b-a3b-instruct", "databricks-gemma-3-12b"])
+
+print(MODEL_NAME + " が選択されました。")
 
 # COMMAND ----------
 
@@ -55,7 +58,8 @@ response = openai_client.chat.completions.create(
         }
     ],
     max_tokens=256,
-    temperature=0.7
+    temperature=0.7,
+    reasoning_effort="low" # GPT-OSS用。デフォルトはmediumだが、lowに変更。
 )
 
 # 結果の表示
@@ -63,7 +67,10 @@ print("=" * 60)
 print("【質問】")
 print("機械学習とは何ですか？3文で簡潔に説明してください。")
 print("\n【LLMの回答】")
-print(response.choices[0].message.content)
+if MODEL_NAME in ["databricks-gpt-oss-20b", "databricks-gpt-oss-120b"]:
+    print(response.choices[0].message.content[-1]["text"])
+else:
+    print(response.choices[0].message.content)
 print("=" * 60)
 
 # COMMAND ----------
@@ -94,11 +101,15 @@ response_no_system = openai_client.chat.completions.create(
         }
     ],
     max_tokens=200,
-    temperature=0.5
+    temperature=0.5,
+    reasoning_effort="low" # GPT-OSS用。デフォルトはmediumだが、lowに変更。
 )
 
 print("【システムプロンプトなし】")
-print(response_no_system.choices[0].message.content)
+if MODEL_NAME in ["databricks-gpt-oss-20b", "databricks-gpt-oss-120b"]:
+    print(response_no_system.choices[0].message.content[-1]["text"])
+else:
+    print(response_no_system.choices[0].message.content)
 print("\n" + "=" * 60 + "\n")
 
 # COMMAND ----------
@@ -117,11 +128,15 @@ response_expert = openai_client.chat.completions.create(
         }
     ],
     max_tokens=200,
-    temperature=0.5
+    temperature=0.5,
+    reasoning_effort="low" # GPT-OSS用。デフォルトはmediumだが、lowに変更。
 )
 
 print("【システムプロンプト: 専門家モード】")
-print(response_expert.choices[0].message.content)
+if MODEL_NAME in ["databricks-gpt-oss-20b", "databricks-gpt-oss-120b"]:
+    print(response_expert.choices[0].message.content[-1]["text"])
+else:
+    print(response_expert.choices[0].message.content)
 print("\n" + "=" * 60 + "\n")
 
 # COMMAND ----------
@@ -140,15 +155,20 @@ response_beginner = openai_client.chat.completions.create(
         }
     ],
     max_tokens=200,
-    temperature=0.5
+    temperature=0.5,
+    reasoning_effort="low" # GPT-OSS用。デフォルトはmediumだが、lowに変更。
 )
 
 print("【システムプロンプト: 初心者向けモード】")
-print(response_beginner.choices[0].message.content)
+if MODEL_NAME in ["databricks-gpt-oss-20b", "databricks-gpt-oss-120b"]:
+    print(response_beginner.choices[0].message.content[-1]["text"])
+else:
+    print(response_beginner.choices[0].message.content)
 print("\n" + "=" * 60 + "\n")
 
 # COMMAND ----------
 
+# DBTITLE 1,システムプロンプトありの回答（成瀬あかりモード）
 SYSTEM_PROMPT = """## あなたは書籍「成瀬シリーズ」の主人公「成瀬あかり」です。
 
 ## 以下を参考に「成瀬あかり」の口調で回答してください。
@@ -189,7 +209,7 @@ SYSTEM_PROMPT = """## あなたは書籍「成瀬シリーズ」の主人公「�
 このように、成瀬あかりの台詞には「自分の言葉で語る」「大胆に宣言する」「意志と行動を重んじる」というトーンが貫かれています。
 """
 
-response_beginner = openai_client.chat.completions.create(
+response_naruse = openai_client.chat.completions.create(
     model=MODEL_NAME,
     messages=[
         {
@@ -202,11 +222,15 @@ response_beginner = openai_client.chat.completions.create(
         }
     ],
     max_tokens=200,
-    temperature=0.5
+    temperature=0.5,
+    reasoning_effort="low" # GPT-OSS用。デフォルトはmediumだが、lowに変更。
 )
 
-print("【システムプロンプト: 初心者向けモード】")
-print(response_beginner.choices[0].message.content)
+print("【システムプロンプト: 成瀬モード】")
+if MODEL_NAME in ["databricks-gpt-oss-20b", "databricks-gpt-oss-120b"]:
+    print(response_naruse.choices[0].message.content[-1]["text"])
+else:
+    print(response_naruse.choices[0].message.content)
 print("\n" + "=" * 60 + "\n")
 
 # COMMAND ----------
@@ -244,9 +268,14 @@ for i in range(3):
             }
         ],
         max_tokens=50,
-        temperature=0.0  # 決定的
+        temperature=0.0,  # 決定的
+        reasoning_effort="low" # GPT-OSS用。デフォルトはmediumだが、lowに変更。
     )
-    print(f"試行 {i+1}: {response.choices[0].message.content}")
+    if MODEL_NAME in ["databricks-gpt-oss-20b", "databricks-gpt-oss-120b"]:
+        print(f"試行 {i+1}: {response.choices[0].message.content[-1]['text']}")
+    else:
+        print(f"試行 {i+1}: {response.choices[0].message.content}")
+    
 
 # COMMAND ----------
 
@@ -262,10 +291,14 @@ for i in range(3):
                 "content": "「機械学習」を一言で表現してください"
             }
         ],
-        max_tokens=50,
-        temperature=1.5  # 創造的
+        max_tokens=100,
+        temperature=1.5,  # 創造的
+        reasoning_effort="low" # GPT-OSS用。デフォルトはmediumだが、lowに変更。
     )
-    print(f"試行 {i+1}: {response.choices[0].message.content}")
+    if MODEL_NAME in ["databricks-gpt-oss-20b", "databricks-gpt-oss-120b"]:
+        print(f"試行 {i+1}: {response.choices[0].message.content[-1]['text']}")
+    else:
+        print(f"試行 {i+1}: {response.choices[0].message.content}")
 
 # COMMAND ----------
 
@@ -306,11 +339,15 @@ def chat(user_message):
         model=MODEL_NAME,
         messages=conversation_history,
         max_tokens=300,
-        temperature=0.7
+        temperature=0.7,
+        reasoning_effort="low" # GPT-OSS用。デフォルトはmediumだが、lowに変更。
     )
     
     # アシスタントの回答を履歴に追加
-    assistant_message = response.choices[0].message.content
+    if MODEL_NAME in ["databricks-gpt-oss-20b", "databricks-gpt-oss-120b"]:
+        assistant_message = response.choices[-1].message.content[-1]['text']
+    else:
+        assistant_message = response.choices[-1].message.content
     conversation_history.append({
         "role": "assistant",
         "content": assistant_message
@@ -372,7 +409,8 @@ response_with_usage = openai_client.chat.completions.create(
         }
     ],
     max_tokens=300,
-    temperature=0.5
+    temperature=0.5,
+    reasoning_effort="low" # GPT-OSS用。デフォルトはmediumだが、lowに変更。
 )
 
 # トークン使用量の表示
@@ -382,7 +420,10 @@ print(f"入力トークン数: {usage.prompt_tokens}")
 print(f"出力トークン数: {usage.completion_tokens}")
 print(f"合計トークン数: {usage.total_tokens}")
 print("\n【生成された回答】")
-print(response_with_usage.choices[0].message.content)
+if MODEL_NAME in ["databricks-gpt-oss-20b", "databricks-gpt-oss-120b"]:
+    print(response_with_usage.choices[-1].message.content[-1]['text'])
+else:
+    print(response_with_usage.choices[0].message.content)
 
 # COMMAND ----------
 
@@ -429,3 +470,7 @@ print(response_with_usage.choices[0].message.content)
 # MAGIC    - ビジネスメールの下書き作成
 # MAGIC    - コードのバグ解説
 # MAGIC    - データ分析結果の要約
+
+# COMMAND ----------
+
+

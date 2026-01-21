@@ -29,7 +29,9 @@
 
 # COMMAND ----------
 
-MODEL_NAME = "databricks-llama-4-maverick"
+import random
+MODEL_NAME = random.choice(["databricks-llama-4-maverick", "databricks-qwen3-next-80b-a3b-instruct"])
+print(MODEL_NAME + " が選択されました。")
 
 # COMMAND ----------
 
